@@ -19,7 +19,7 @@ class ProductSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Product
-        fields = ['id', 'title', 'price', 'category', 'price_after_tax', 'inventory', 'slug', 'description']
+        fields = ['id', 'title', 'price', 'category', 'price_after_tax', 'inventory', 'description']
     
 
     def get_price_after_tax(self, product):
@@ -35,3 +35,8 @@ class ProductSerializer(serializers.ModelSerializer):
         product.slug = slugify(product.name)
         product.save()
         return product
+    
+    # def update(self, instance, validated_data):
+    #     instance.inventory = validated_data.get('inventory')
+    #     instance.save()
+    #     return instance
