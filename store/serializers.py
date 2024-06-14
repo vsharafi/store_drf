@@ -9,14 +9,15 @@ class CategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = Category
         fields = ['id', 'title', 'description', 'product_number']
-    product_number = serializers.SerializerMethodField(read_only=True)
+    # product_number = serializers.SerializerMethodField(read_only=True)
+    product_number = serializers.IntegerField(read_only=True, source='products.count')
 
-    def get_product_number(self, category):
-        try:
-            num = category.product_count
-        except AttributeError:
-            num = 0
-        return num
+    # def get_product_number(self, category):
+    #     try:
+    #         num = category.product_count
+    #     except AttributeError:
+    #         num = 0
+    #     return num
     
     def validate(self, data):
         if len(data['title']) < 3:
