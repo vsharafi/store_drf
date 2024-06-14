@@ -1,14 +1,28 @@
 from rest_framework import serializers
 from decimal import Decimal
 from django.utils.text import slugify
+from django.db.models import Prefetch
 
 from store.models import Category, Product
 
 
-class CategorySerializer(serializers.Serializer):
-    title = serializers.CharField(max_length=255)
-    description = serializers.CharField(max_length=500)
+class CategorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Category
+        fields = ['id', 'title', 'description', 'product_number']
+    product_number = serializers.SerializerMethodField(read_only=True)
 
+    def get_product_number(self, category):
+        try:
+            num = category.product_count
+        except AttributeError:
+            num = 0
+        return num
+    
+    def validate(self, data):
+        if len(data['title']) < 3:
+            raise serializers.ValidationError("Category title should be at least 6.")
+        return super().validate(data)
 
 class ProductSerializer(serializers.ModelSerializer):
     TAX = 0.09
