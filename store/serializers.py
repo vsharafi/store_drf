@@ -2,7 +2,7 @@ from rest_framework import serializers
 from decimal import Decimal
 from django.utils.text import slugify
 
-from store.models import Category, Product
+from store.models import Category, Comment, Product
 
 
 class CategorySerializer(serializers.ModelSerializer):
@@ -54,3 +54,10 @@ class ProductSerializer(serializers.ModelSerializer):
     #     instance.inventory = validated_data.get('inventory')
     #     instance.save()
     #     return instance
+
+
+
+class CommentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Comment
+        fields = ['id', 'product', 'name', 'body']
