@@ -9,13 +9,16 @@ from django.db.models import Count
 
 from .models import Category, Product, Comment
 from .serializers import CategorySerializer, CommentSerializer, ProductSerializer
+from .filters import ProductFilter
 
 
 class ProductViewSet(ModelViewSet):
     serializer_class = ProductSerializer
     queryset = Product.objects.all()
     filter_backends = [DjangoFilterBackend]
-    filterset_fields = ['category_id', 'inventory']
+    # filterset_fields = ['category_id', 'inventory']
+    filterset_class = ProductFilter
+
 
 
     def get_serializer_context(self):
