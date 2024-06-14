@@ -1,7 +1,6 @@
 from rest_framework import serializers
 from decimal import Decimal
 from django.utils.text import slugify
-from django.db.models import Prefetch
 
 from store.models import Category, Product
 
