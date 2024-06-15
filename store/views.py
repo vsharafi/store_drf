@@ -9,8 +9,8 @@ from django_filters.rest_framework import DjangoFilterBackend
 from django.shortcuts import get_object_or_404
 from django.db.models import Count
 
-from .models import Cart, Category, Product, Comment
-from .serializers import CartSerializer, CategorySerializer, CommentSerializer, ProductSerializer
+from .models import Cart, CartItem, Category, Product, Comment
+from .serializers import CartItemSerializer, CartSerializer, CategorySerializer, CommentSerializer, ProductSerializer
 from .filters import ProductFilter
 from .paginations import DefaultPagination
 
@@ -65,3 +65,11 @@ class CommentViewSet(ModelViewSet):
 class CartViewSet(CreateModelMixin, RetrieveModelMixin, DestroyModelMixin, GenericViewSet):
     serializer_class = CartSerializer
     queryset = Cart.objects.prefetch_related('items__product')
+
+
+class CartItemViewSet(ModelViewSet):
+    serializer_class = CartItemSerializer
+    def get_queryset(self):
+        cart_pk = self.kwargs.get('cart_pk')
+        queryset = CartItem.objects.select_related('product').filter(cart_id=cart_pk)
+        return queryset
