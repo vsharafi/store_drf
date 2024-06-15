@@ -64,4 +64,4 @@ class CommentViewSet(ModelViewSet):
 
 class CartViewSet(CreateModelMixin, RetrieveModelMixin, GenericViewSet):
     serializer_class = CartSerializer
-    queryset = Cart.objects.all()
+    queryset = Cart.objects.prefetch_related('items__product')
