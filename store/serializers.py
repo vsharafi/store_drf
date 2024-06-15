@@ -65,8 +65,15 @@ class CommentSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         product_pk = self.context['product_pk']
         return Comment.objects.create(product_id=product_pk, **validated_data)
-    
+
+
+class CartProductSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Product
+        fields = ['id', 'name', 'unit_price', ]
+
 class CartItemSerializer(serializers.ModelSerializer):
+    product = CartProductSerializer()
     class Meta:
         model = CartItem
         fields = ['id', 'product', 'quantity']
@@ -75,7 +82,7 @@ class CartSerializer(serializers.ModelSerializer):
     class Meta:
         model = Cart
         fields = ['id', 'items']
-        read_only_fields = ['id', 'items']
+        read_only_fields = ['id']
 
-    items = CartItemSerializer(many=True)
+    items = CartItemSerializer(many=True, read_only=True)
 
