@@ -2,7 +2,7 @@ from rest_framework import serializers
 from decimal import Decimal
 from django.utils.text import slugify
 
-from store.models import Cart, CartItem, Category, Comment, Customer, Product
+from store.models import Cart, CartItem, Category, Comment, Customer, Order, OrderItem, Product
 
 
 class CategorySerializer(serializers.ModelSerializer):
@@ -88,10 +88,10 @@ class AddCartItemSerializer(serializers.ModelSerializer):
         product = validated_data.get('product')
         quantity = validated_data['quantity']
         try:
-            cart_item = CartItem.objects.get(cart_id=cart_id, product=product)
+            cart_item = CartItem.objects.get(cart_id=cart_id, product_id=product)
             cart_item.quantity += quantity
             cart_item.save()
-        except cart_item.DoesNotExist:
+        except CartItem.DoesNotExist:
             cart_item = CartItem.objects.create(cart_id=cart_id, **validated_data)
         self.instance = cart_item
         return cart_item
@@ -124,3 +124,41 @@ class CustomerSerializer(serializers.ModelSerializer):
         model = Customer
         fields = ['id', 'user', 'birth_date']
         read_only_fields = ['user', ]
+
+
+
+class OrderItemProductSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Product
+        fields = ['id', 'name', 'unit_price', ]
+
+class OrderItemSerializer(serializers.ModelSerializer):
+    product = OrderItemProductSerializer(read_only=True)
+    class Meta:
+        model = OrderItem
+        fields = ['id', 'product', 'quantity', 'unit_price']
+
+
+class OrderCustomerSerializer(serializers.ModelSerializer):
+    first_name = serializers.CharField(max_length=255, source='user.first_name')
+    class Meta:
+        model = Customer
+        fields = ['id', 'first_name', 'birth_date']
+
+
+
+class OrderForAdminSerializer(serializers.ModelSerializer):
+    items = OrderItemSerializer(many=True, read_only=True)
+    customer = OrderCustomerSerializer()
+    class Meta:
+        model = Order
+        fields = ['id', 'items', 'customer', 'status', 'datetime_created']
+        read_only_fields = ['customer', 'status']
+
+
+class OrderForUserSerializer(serializers.ModelSerializer):
+    items = OrderItemSerializer(many=True, read_only=True)
+    class Meta:
+        model = Order
+        fields = ['id', 'items', 'status', 'datetime_created']
+        read_only_fields = ['customer', 'status']

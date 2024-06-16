@@ -6,16 +6,16 @@ from rest_framework.mixins import RetrieveModelMixin, CreateModelMixin, DestroyM
 from rest_framework.filters import OrderingFilter, SearchFilter
 from rest_framework.decorators import action
 from rest_framework.pagination import PageNumberPagination, LimitOffsetPagination
-from rest_framework.permissions import IsAdminUser, IsAuthenticated
+from rest_framework.permissions import IsAdminUser, IsAuthenticated, DjangoModelPermissions
 from django_filters.rest_framework import DjangoFilterBackend
 from django.shortcuts import get_object_or_404
-from django.db.models import Count
+from django.db.models import Count, Prefetch
 
-from .models import Cart, CartItem, Category, Customer, Product, Comment
-from .serializers import AddCartItemSerializer, CartItemSerializer, CartSerializer, CategorySerializer, CommentSerializer, CustomerSerializer, ProductSerializer, UpdateCartItemSerializer
+from .models import Cart, CartItem, Category, Customer, Order, OrderItem, Product, Comment
+from .serializers import AddCartItemSerializer, CartItemSerializer, CartSerializer, CategorySerializer, CommentSerializer, CustomerSerializer, OrderForAdminSerializer, OrderForUserSerializer, ProductSerializer, UpdateCartItemSerializer
 from .filters import ProductFilter
 from .paginations import DefaultPagination
-from .permissions import IsAdminOrReadOnly
+from .permissions import CustomDjangoModelPermissions, IsAdminOrReadOnly
 
 
 class ProductViewSet(ModelViewSet):
@@ -28,6 +28,7 @@ class ProductViewSet(ModelViewSet):
     pagination_class = DefaultPagination
     # filterset_fields = ['category_id', 'inventory']
     filterset_class = ProductFilter
+    permission_classes = [IsAdminOrReadOnly, ]
 
 
 
@@ -65,9 +66,10 @@ class CommentViewSet(ModelViewSet):
         return {'product_pk': self.kwargs['product_pk']}
     
 
-class CartViewSet(CreateModelMixin, RetrieveModelMixin, DestroyModelMixin, GenericViewSet):
+class CartViewSet(ModelViewSet):
     serializer_class = CartSerializer
     queryset = Cart.objects.prefetch_related('items__product')
+    permission_classes = [IsAdminUser]
     lookup_value_regex = '[0-9a-fA-F]{8}\-?[0-9a-fA-F]{4}\-?[0-9a-fA-F]{4}\-?[0-9a-fA-F]{4}\-?[0-9a-fA-F]{12}' 
 
 
@@ -109,3 +111,21 @@ class CustomerViewSet(ModelViewSet):
             return Response(serializer.data)
 
         return Response(serializer.data)
+    
+class OrderViewSet(ModelViewSet):
+    permission_classes = [IsAuthenticated]
+    def get_queryset(self):
+        queryset = Order.objects.prefetch_related(
+                Prefetch(
+                    'items',
+                    queryset=OrderItem.objects.select_related('product')
+                    )
+                ).select_related('customer__user')
+        if self.request.user.is_staff:
+            return queryset
+        return queryset.filter(customer__user=self.request.user)
+    
+    def get_serializer_class(self):
+        if self.request.user.is_staff:
+            return OrderForAdminSerializer
+        return OrderForUserSerializer
