@@ -6,6 +6,7 @@ from rest_framework.mixins import RetrieveModelMixin, CreateModelMixin, DestroyM
 from rest_framework.filters import OrderingFilter, SearchFilter
 from rest_framework.decorators import action
 from rest_framework.pagination import PageNumberPagination, LimitOffsetPagination
+from rest_framework.permissions import IsAdminUser, IsAuthenticated
 from django_filters.rest_framework import DjangoFilterBackend
 from django.shortcuts import get_object_or_404
 from django.db.models import Count
@@ -14,6 +15,7 @@ from .models import Cart, CartItem, Category, Customer, Product, Comment
 from .serializers import AddCartItemSerializer, CartItemSerializer, CartSerializer, CategorySerializer, CommentSerializer, CustomerSerializer, ProductSerializer, UpdateCartItemSerializer
 from .filters import ProductFilter
 from .paginations import DefaultPagination
+from .permissions import IsAdminOrReadOnly
 
 
 class ProductViewSet(ModelViewSet):
@@ -39,10 +41,10 @@ class ProductViewSet(ModelViewSet):
         product.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
-
 class CategoryViewSet(ModelViewSet):
     serializer_class = CategorySerializer
     queryset =  Category.objects.prefetch_related('products')
+    permission_classes = [IsAdminOrReadOnly, ]
 
     def destroy(self, request, pk):
         category = get_object_or_404(Category.objects.annotate(products_count=Count('products')), pk=pk)
@@ -88,8 +90,6 @@ class CartItemViewSet(ModelViewSet):
     def get_serializer_context(self):
         return {'cart_pk': self.kwargs.get('cart_pk')}
     
-
-from rest_framework.permissions import IsAdminUser, IsAuthenticated
 
 class CustomerViewSet(ModelViewSet):
     serializer_class = CustomerSerializer
