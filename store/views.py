@@ -12,7 +12,7 @@ from django.shortcuts import get_object_or_404
 from django.db.models import Count, Prefetch
 
 from .models import Cart, CartItem, Category, Customer, Order, OrderItem, Product, Comment
-from .serializers import AddCartItemSerializer, CartItemSerializer, CartSerializer, CategorySerializer, CommentSerializer, CustomerSerializer, OrderForAdminSerializer, OrderForUserSerializer, ProductSerializer, UpdateCartItemSerializer
+from .serializers import AddCartItemSerializer, CartItemSerializer, CartSerializer, CategorySerializer, CommentSerializer, CustomerSerializer, OrderCreateSerializer, OrderForAdminSerializer, OrderForUserSerializer, ProductSerializer, UpdateCartItemSerializer
 from .filters import ProductFilter
 from .paginations import DefaultPagination
 from .permissions import CustomDjangoModelPermissions, IsAdminOrReadOnly
@@ -126,6 +126,11 @@ class OrderViewSet(ModelViewSet):
         return queryset.filter(customer__user=self.request.user)
     
     def get_serializer_class(self):
+        if self.request.method == "POST":
+            return OrderCreateSerializer
         if self.request.user.is_staff:
             return OrderForAdminSerializer
         return OrderForUserSerializer
+    
+    def get_serializer_context(self):
+        return {'user_id': self.request.user.id}
