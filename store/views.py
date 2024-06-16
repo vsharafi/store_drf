@@ -89,11 +89,14 @@ class CartItemViewSet(ModelViewSet):
         return {'cart_pk': self.kwargs.get('cart_pk')}
     
 
+from rest_framework.permissions import IsAdminUser, IsAuthenticated
+
 class CustomerViewSet(ModelViewSet):
     serializer_class = CustomerSerializer
     queryset = Customer.objects.all()
+    permission_classes = [IsAdminUser]
 
-    @action(detail=False, methods=['GET', 'PUT'])
+    @action(detail=False, methods=['GET', 'PUT'], permission_classes=[IsAuthenticated])
     def me(self, request):
         user_id = request.user.id
         customer = Customer.objects.get(user_id=user_id)
