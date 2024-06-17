@@ -16,7 +16,7 @@ from .serializers import AddCartItemSerializer, CartItemSerializer, CartSerializ
 from .filters import ProductFilter
 from .paginations import DefaultPagination
 from .permissions import CustomDjangoModelPermissions, IsAdminOrReadOnly
-
+from .signals import order_created
 
 class ProductViewSet(ModelViewSet):
     serializer_class = ProductSerializer
@@ -148,5 +148,6 @@ class OrderViewSet(ModelViewSet):
         create_order_serializer = OrderCreateSerializer(data=request.data, context={'user_id': self.request.user.id})
         create_order_serializer.is_valid(raise_exception=True)
         created_order = create_order_serializer.save()
+        order_created.send_robust(self.__class__, order=created_order)
         serializer = OrderForUserSerializer(created_order)
         return Response(serializer.data)
