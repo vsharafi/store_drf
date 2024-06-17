@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from decimal import Decimal
 from django.utils.text import slugify
+from django.db import transaction
 
 from store.models import Cart, CartItem, Category, Comment, Customer, Order, OrderItem, Product
 
@@ -175,22 +176,23 @@ class OrderCreateSerializer(serializers.Serializer):
         return cart_id
     
     def save(self, **kwargs):
-        cart_id = self.validated_data['cart_id']
-        user_id = self.context['user_id']
-        customer = Customer.objects.get(user_id=user_id)
+        with transaction.atomic():
+            cart_id = self.validated_data['cart_id']
+            user_id = self.context['user_id']
+            customer = Customer.objects.get(user_id=user_id)
 
-        order = Order()
-        order.customer = customer
-        order.save()
-        cart_items = CartItem.objects.select_related('product').filter(cart_id=cart_id)
-        order_items = list()
-        for item in cart_items:
-            order_item = OrderItem()
-            order_item.order = order
-            order_item.product_id = item.product_id
-            order_item.unit_price = item.product.unit_price
-            order_item.quantity = item.quantity
-            order_items.append(order_item)
-        OrderItem.objects.bulk_create(order_items)
-        Cart.objects.get(id=cart_id).delete()
-        return order
+            order = Order()
+            order.customer = customer
+            order.save()
+            cart_items = CartItem.objects.select_related('product').filter(cart_id=cart_id)
+            order_items = [
+                            OrderItem(
+                                    order = order,
+                                    product_id = item.product_id,
+                                    unit_price = item.product.unit_price,
+                                    quantity = item.quantity
+                                ) for item in cart_items
+                        ]
+            OrderItem.objects.bulk_create(order_items)
+            Cart.objects.get(id=cart_id).delete()
+            return order

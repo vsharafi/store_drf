@@ -66,10 +66,12 @@ class CommentViewSet(ModelViewSet):
         return {'product_pk': self.kwargs['product_pk']}
     
 
-class CartViewSet(ModelViewSet):
+class CartViewSet(CreateModelMixin,
+                   RetrieveModelMixin,
+                   DestroyModelMixin,
+                   GenericViewSet):
     serializer_class = CartSerializer
     queryset = Cart.objects.prefetch_related('items__product')
-    permission_classes = [IsAdminUser]
     lookup_value_regex = '[0-9a-fA-F]{8}\-?[0-9a-fA-F]{4}\-?[0-9a-fA-F]{4}\-?[0-9a-fA-F]{4}\-?[0-9a-fA-F]{12}' 
 
 
@@ -134,3 +136,10 @@ class OrderViewSet(ModelViewSet):
     
     def get_serializer_context(self):
         return {'user_id': self.request.user.id}
+    
+    def create(self, request, *args, **kwargs):
+        create_order_serializer = OrderCreateSerializer(data=request.data, context={'user_id': self.request.user.id})
+        create_order_serializer.is_valid(raise_exception=True)
+        created_order = create_order_serializer.save()
+        serializer = OrderForUserSerializer(created_order)
+        return Response(serializer.data)
