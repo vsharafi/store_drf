@@ -12,7 +12,7 @@ from django.shortcuts import get_object_or_404
 from django.db.models import Count, Prefetch
 
 from .models import Cart, CartItem, Category, Customer, Order, OrderItem, Product, Comment
-from .serializers import AddCartItemSerializer, CartItemSerializer, CartSerializer, CategorySerializer, CommentSerializer, CustomerSerializer, OrderCreateSerializer, OrderForAdminSerializer, OrderForUserSerializer, ProductSerializer, UpdateCartItemSerializer
+from .serializers import AddCartItemSerializer, CartItemSerializer, CartSerializer, CategorySerializer, CommentSerializer, CustomerSerializer, OrderCreateSerializer, OrderForAdminSerializer, OrderForUserSerializer, OrderUpdateSerializer, ProductSerializer, UpdateCartItemSerializer
 from .filters import ProductFilter
 from .paginations import DefaultPagination
 from .permissions import CustomDjangoModelPermissions, IsAdminOrReadOnly
@@ -115,7 +115,12 @@ class CustomerViewSet(ModelViewSet):
         return Response(serializer.data)
     
 class OrderViewSet(ModelViewSet):
-    permission_classes = [IsAuthenticated]
+    http_method_names = ['get', 'post', 'patch', 'delete', 'option', 'head']
+    def get_permissions(self):
+        if self.request.method in ['PATCH', "DELETE"]:
+            return [IsAdminUser()]
+        return [IsAuthenticated()]
+    
     def get_queryset(self):
         queryset = Order.objects.prefetch_related(
                 Prefetch(
@@ -130,6 +135,8 @@ class OrderViewSet(ModelViewSet):
     def get_serializer_class(self):
         if self.request.method == "POST":
             return OrderCreateSerializer
+        if self.request.method == "PATCH":
+            return OrderUpdateSerializer
         if self.request.user.is_staff:
             return OrderForAdminSerializer
         return OrderForUserSerializer
